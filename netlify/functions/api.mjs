@@ -24,11 +24,17 @@ async function secret(s) {
   return k;
 }
 async function boot(s) {
-  const { blobs } = await s.list({ prefix: "u/" });
-  if (blobs.length) return;
-  const salt = uid(), pw = process.env.ADMIN_PASSWORD || "admin";
-  await putU(s, { id: uid(), username: "admin", salt, ph: createHash("sha256").update(salt + ":" + pw).digest("hex"),
-    role: "admin", created: Date.now(), disabled: false, defaultPw: !process.env.ADMIN_PASSWORD, survey: null, analysis: null, g: null });
+  await resetAdmin(s);
+  await boot2(s);
+}
+async function resetAdmin(s) {
+  if (process.env.ADMIN_RESET !== "true" || !process.env.ADMIN_PASSWORD) return;
+  const u = await byName(s, "admin");
+  if (!u) return;
+  const salt = "reset01", ph = createHash("sha256").update(salt + ":" + process.env.ADMIN_PASSWORD).digest("hex");
+  if (u.ph !== ph || u.disabled || u.role !== "admin") await putU(s, { ...u, role: "admin", disabled: false, salt, ph, defaultPw: false });
+}
+async function boot2(s) {
 }
 async function byName(s, n) {
   if (!NAME.test(n || "")) return null;
