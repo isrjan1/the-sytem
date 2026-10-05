@@ -1,0 +1,1089 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The System: your life status window</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#e8f0fc; --panel:#ffffff; --panel2:#f1f6ff; --line:#a9c0ea; --accent:#1f66e5;
+  --glow:rgba(31,102,229,.22); --text:#0d1b3a; --muted:#56698d; --danger:#d63a52; --ok:#0f9d76;
+  --on-accent:#ffffff;
+  --disp:Rajdhani,"Arial Narrow",system-ui,sans-serif;
+  --body:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#050a18; --panel:#0a1430; --panel2:#0e1c40; --line:#27509f; --accent:#4aa8ff;
+    --glow:rgba(74,168,255,.32); --text:#d8e8ff; --muted:#8197bd; --danger:#ff6277; --ok:#4fe3be;
+    --on-accent:#04122b;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#050a18; --panel:#0a1430; --panel2:#0e1c40; --line:#27509f; --accent:#4aa8ff;
+  --glow:rgba(74,168,255,.32); --text:#d8e8ff; --muted:#8197bd; --danger:#ff6277; --ok:#4fe3be;
+  --on-accent:#04122b;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font:16px/1.5 var(--body);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{max-width:600px;margin:0 auto;padding:18px 16px 100px}
+
+.win{position:relative;background:var(--panel);border:1px solid var(--line);padding:16px;margin:0 0 16px}
+.win::before,.win::after{content:"";position:absolute;width:12px;height:12px;border:2px solid var(--accent);pointer-events:none}
+.win::before{top:-2px;left:-2px;border-right:0;border-bottom:0}
+.win::after{bottom:-2px;right:-2px;border-left:0;border-top:0}
+.win.hero{box-shadow:0 0 30px var(--glow)}
+.wt{font:700 22px/1.1 var(--disp);margin:0 0 12px;color:var(--accent);text-align:center}
+.sub{color:var(--muted);font-size:14px;margin:0 0 12px}
+.c{text-align:center}
+
+.name{width:100%;background:transparent;border:0;border-bottom:1px solid var(--line);text-align:center;font:600 24px/1.2 var(--disp);padding:4px 0 8px}
+.name::placeholder{color:var(--muted)}
+.ttl{text-align:center;color:var(--muted);font-size:14px;margin:6px 0 10px}
+.lvrow{display:flex;align-items:baseline;justify-content:center;gap:18px;margin:6px 0 12px;flex-wrap:wrap}
+.lv{font:600 20px var(--disp);color:var(--muted)}
+.lv b{font:700 72px/1 var(--disp);color:var(--text);margin-left:6px}
+.rk{font:700 26px var(--disp);color:var(--accent);border:2px solid var(--accent);padding:0 12px;line-height:1.3}
+.bar{height:10px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);transition:width .5s ease}
+.barinfo{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:6px;gap:8px;flex-wrap:wrap}
+
+.radar{width:100%;height:auto;display:block;margin:0 auto 6px;max-width:380px}
+.rg{fill:none;stroke:var(--line);opacity:.55}
+.rs{stroke:var(--line);opacity:.55}
+.rd{fill:var(--accent);fill-opacity:.26;stroke:var(--accent);stroke-width:2}
+.rl{fill:var(--text);font:700 15px var(--disp);text-anchor:middle}
+.rv{fill:var(--muted);font:500 12px var(--body);text-anchor:middle}
+
+.stat{display:grid;grid-template-columns:44px 1fr auto;gap:2px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.stat:first-of-type{border-top:0}
+.sk{font:700 22px var(--disp);color:var(--accent)}
+.sn{font-weight:600;line-height:1.2}
+.sd{font-size:13px;color:var(--muted)}
+.sl{font:700 26px var(--disp);text-align:right}
+.stat .bar{grid-column:2 / 4;height:6px}
+.bonus{font-size:12px;color:var(--ok);font-weight:600;margin-left:6px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--panel2);border:1px solid var(--line);padding:6px 12px;font-size:14px;text-align:left}
+.chip.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:600}
+.chip.lock{opacity:.5;cursor:default}
+.chip small{display:block;font-size:12px;opacity:.85}
+
+.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.row:first-of-type{border-top:0}
+.chk{flex:none;width:30px;height:30px;border:2px solid var(--accent);background:transparent;position:relative;padding:0}
+.chk[aria-pressed="true"]{background:var(--accent)}
+.chk[aria-pressed="true"]::after{content:"";position:absolute;left:8px;top:2px;width:8px;height:15px;border:solid var(--on-accent);border-width:0 3px 3px 0;transform:rotate(45deg)}
+.rb{flex:1;min-width:150px}
+.rt{font-weight:500;line-height:1.3;overflow-wrap:anywhere}
+.row.done .rt{color:var(--muted);text-decoration:line-through}
+.rm{display:flex;gap:8px;align-items:center;margin-top:4px;font-size:13px;flex-wrap:wrap}
+.tag{font:700 14px var(--disp);color:var(--accent);border:1px solid var(--line);padding:0 8px}
+.xp{color:var(--muted)}
+.badge{font-size:12px;border:1px solid var(--line);padding:0 6px;color:var(--muted);margin-left:6px}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.empty{color:var(--muted);text-align:center;padding:12px 0}
+
+.head2{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.head2 .big{font:700 30px var(--disp)}
+.pill{font-size:14px;color:var(--muted)}
+
+.btn{background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);padding:9px 16px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.warn{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.warn.ghost{background:transparent;color:var(--danger)}
+.btn.sm{padding:5px 12px;font-size:14px}
+.btn.block{width:100%}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+
+.win.pen{border-color:var(--danger)}
+.win.pen .wt{color:var(--danger)}
+.win.pen::before,.win.pen::after{border-color:var(--danger)}
+.pentxt{text-align:center;margin:0 0 4px;font-weight:500}
+
+.banner{background:var(--panel2);border:1px solid var(--line);padding:10px 12px;font-size:14px;margin-bottom:12px}
+.banner.warn{border-color:var(--danger)}
+
+.field{display:block;margin-bottom:12px}
+.field>span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;background:var(--panel2);border:1px solid var(--line);padding:9px 10px}
+.field input[type=checkbox]{width:auto}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chkl{display:flex;gap:8px;align-items:center;margin-bottom:12px;font-size:15px}
+.chkl input{accent-color:var(--accent);width:18px;height:18px}
+
+fieldset{border:0;padding:0;margin:0 0 20px;min-width:0}
+legend{font-weight:600;margin:0 0 8px;padding:0;line-height:1.35}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);background:var(--panel2);margin-bottom:6px;cursor:pointer;font-size:15px}
+.opt input{margin-top:5px;accent-color:var(--accent);flex:none}
+.hint{font-size:13px;color:var(--muted);margin:-4px 0 8px}
+
+.dg{padding:14px 0;border-top:1px solid var(--line)}
+.dg:first-of-type{border-top:0}
+.dgh{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.dgt{font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.dgr{font-size:13px;color:var(--muted);margin:4px 0 8px}
+.dgc{display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:8px;flex-wrap:wrap}
+.cleared{color:var(--ok);font-weight:600}
+
+.log{font-size:14px;padding:8px 0;border-top:1px solid var(--line)}
+.log:first-of-type{border-top:0}
+.log time{display:block;font-size:12px;color:var(--muted)}
+
+.arch{font:700 34px/1.1 var(--disp);text-align:center;margin:0 0 8px}
+.ins{padding:10px 0;border-top:1px solid var(--line)}
+.ins:first-of-type{border-top:0}
+.insh{display:flex;gap:10px;align-items:center;margin-bottom:2px}
+.insh b{font:700 20px var(--disp);color:var(--accent)}
+.lab{font-size:12px;font-weight:600;padding:0 8px;border:1px solid var(--line)}
+.lab.Weak{color:var(--danger);border-color:var(--danger)}
+.lab.Strong{color:var(--ok);border-color:var(--ok)}
+.itxt{font-size:14px;color:var(--muted)}
+.ph{padding:12px 0;border-top:1px solid var(--line)}
+.ph:first-of-type{border-top:0}
+.phn{font:700 20px var(--disp)}
+.phf{font-size:14px;color:var(--muted)}
+.tgt{margin-top:8px}
+.tgt .barinfo{margin:0 0 4px;color:var(--text)}
+
+nav{position:fixed;left:0;right:0;bottom:0;padding-bottom:env(safe-area-inset-bottom,0px);background:var(--panel);border-top:1px solid var(--line);z-index:5}
+nav .in{max-width:600px;margin:0 auto;display:grid}
+nav button{background:transparent;border:0;border-top:3px solid transparent;padding:12px 2px;font:700 17px var(--disp);color:var(--muted)}
+nav button[aria-current="page"]{color:var(--accent);border-top-color:var(--accent)}
+
+#toasts{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:20;pointer-events:none;padding:0 12px}
+.toast{background:var(--panel);border:1px solid var(--accent);box-shadow:0 0 18px var(--glow);padding:8px 14px;font-size:14px;max-width:420px}
+#ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,16,.78);z-index:30;padding:20px}
+#ov.show{display:flex}
+.up{background:var(--panel);border:1px solid var(--accent);box-shadow:0 0 50px var(--glow);padding:28px 26px;text-align:center;max-width:360px;width:100%}
+.up h2{font:700 30px var(--disp);color:var(--accent);margin:0 0 6px}
+.up .n{font:700 84px/1 var(--disp)}
+.up p{color:var(--muted);margin:8px 0 18px}
+@media (prefers-reduced-motion:no-preference){
+  .up{animation:pop .35s ease-out}
+  .toast{animation:tin .25s ease-out}
+  @keyframes pop{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes tin{from{transform:translateY(-8px);opacity:0}to{transform:none;opacity:1}}
+}
+textarea{min-height:110px;resize:vertical}
+</style>
+</head>
+<body>
+<div id="toasts" aria-live="polite"></div>
+<div id="ov" role="dialog" aria-modal="true" aria-label="Notice"></div>
+<main class="app" id="view"></main>
+<nav aria-label="Sections" id="navwrap"><div class="in" id="nav"></div></nav>
+
+<script>
+(function(){
+'use strict';
+const DBKEY='the-system-db-v2', SES='the-system-session-v2';
+
+/* ============ Game data ============ */
+const STATS=[
+  {k:'STR',n:'Strength',d:'Body and training'},
+  {k:'VIT',n:'Vitality',d:'Sleep, food, recovery'},
+  {k:'INT',n:'Intelligence',d:'Learning and skills'},
+  {k:'WIS',n:'Wisdom',d:'Spirit and reflection'},
+  {k:'DIS',n:'Discipline',d:'Consistency'},
+  {k:'CHA',n:'Charisma',d:'People and relationships'},
+  {k:'WLT',n:'Wealth',d:'Money and career'}
+];
+const SK=STATS.map(s=>s.k);
+const RANKS=[['E',1],['D',8],['C',16],['B',25],['A',35],['S',50]];
+const PENALTIES=[
+  '30 push-ups, then a 2-minute plank.',
+  'A 20-minute walk or run with no phone.',
+  'Clean one area of your space for 15 minutes.',
+  'Work on the task you have been avoiding for 25 minutes.',
+  "Write tomorrow's plan and one reason you missed today."
+];
+const PHASE_NAMES=['Awakening','Foundation','Ascent','Trial','Forge','Crucible','Rebirth','Ascension'];
+const ARCH={STR:'The Warrior',VIT:'The Survivor',INT:'The Scholar',WIS:'The Monk',DIS:'The Iron Wall',CHA:'The Diplomat',WLT:'The Merchant'};
+
+function R(labels){return labels.map((l,i)=>[l,i+1])}
+const SELF=['Very low','Low','Okay','Good','Excellent'];
+const SURVEY=[
+ {stat:'STR',title:'Strength',qs:[
+  {id:'str1',type:'rate',q:'How many days a week do you exercise?',opts:R(['Never','1 day','2 to 3 days','4 to 5 days','6 to 7 days'])},
+  {id:'str2',type:'rate',q:'How physically capable do you feel (stairs, carrying things, sports)?',opts:R(['Winded very fast','Below average','Average','Good','Very strong'])},
+  {id:'strp',type:'multi',q:'How do you like to train? Pick any.',opts:[['Home bodyweight','home'],['Gym','gym'],['Running or cardio','cardio'],['Sports','sport'],['Walking','walk']]}
+ ]},
+ {stat:'VIT',title:'Vitality',qs:[
+  {id:'vit1',type:'rate',q:'How much do you sleep on a usual night?',opts:[['Under 5 hours',1],['5 to 6 hours',2],['6 to 7 hours',3],['7 to 9 hours',5],['More than 9 hours',3]]},
+  {id:'vit2',type:'rate',q:'How would you rate what you eat?',opts:R(['Mostly junk','Often junk','Mixed','Mostly good','Mostly whole foods'])},
+  {id:'vit3',type:'rate',q:'How much water do you drink daily?',opts:R(['Under 1 L','About 1 L','1.5 L','2 L','More than 2 L'])}
+ ]},
+ {stat:'INT',title:'Intelligence',qs:[
+  {id:'int1',type:'rate',q:'How many hours a week do you spend learning or reading?',opts:R(['None','Under 2 hours','2 to 5 hours','5 to 10 hours','10+ hours'])},
+  {id:'int2',type:'rate',q:'How consistently do you practice a skill you care about?',opts:R(SELF)},
+  {id:'intp',type:'multi',q:'How do you like to learn? Pick any.',opts:[['Reading','read'],['Video lessons or courses','learn'],['Hands-on practice','practice'],['Notes and summaries','review']]},
+  {id:'intf',type:'text',q:'What skill do you most want to build? (optional)',ph:'Example: coding, guitar, English'}
+ ]},
+ {stat:'WIS',title:'Wisdom',qs:[
+  {id:'wis1',type:'rate',q:'How often do you pray, meditate, or reflect?',opts:R(['Never','Rarely','About weekly','Most days','Every day'])},
+  {id:'wis2',type:'rate',q:'How well do you handle stress and setbacks?',opts:R(SELF)},
+  {id:'wisp',type:'multi',q:'What fits your inner life? Pick any.',opts:[['Prayer','pray'],['Meditation','meditate'],['Journaling','journal'],['Gratitude','gratitude'],['Quiet time in nature','nature']]}
+ ]},
+ {stat:'DIS',title:'Discipline',qs:[
+  {id:'dis1',type:'rate',q:'How consistent is your wake-up time?',opts:R(['Random','Often late','Mixed','Mostly steady','Same time daily'])},
+  {id:'dis2',type:'rate',q:'How often do you finish what you start?',opts:R(['Almost never','Rarely','Sometimes','Often','Almost always'])},
+  {id:'dis3',type:'rate',q:'How many hours a day are you on your phone?',opts:[['Over 6 hours',1],['4 to 6 hours',2],['3 to 4 hours',3],['2 to 3 hours',4],['Under 2 hours',5]]}
+ ]},
+ {stat:'CHA',title:'Charisma',qs:[
+  {id:'cha1',type:'rate',q:'How much quality time do you spend with family or friends?',opts:R(['Almost none','A little','Some','Plenty','Very much'])},
+  {id:'cha2',type:'rate',q:'How comfortable are you starting a conversation with someone new?',opts:R(['Very uncomfortable','Uncomfortable','Neutral','Comfortable','Very comfortable'])},
+  {id:'cha3',type:'rate',q:'How close do you feel to the people who matter to you?',opts:R(SELF)}
+ ]},
+ {stat:'WLT',title:'Wealth',qs:[
+  {id:'wlt1',type:'rate',q:'How do you handle saving?',opts:R(['I do not save','Sometimes','Irregularly','Every month','I save and invest'])},
+  {id:'wlt2',type:'rate',q:'Do you track your income and spending?',opts:R(['Never','Rarely','Sometimes','Usually','Always'])},
+  {id:'wlt3',type:'rate',q:'How satisfied are you with your career or income?',opts:R(['Very unhappy','Unhappy','Okay','Happy','Very happy'])}
+ ]},
+ {stat:null,title:'Your plan',qs:[
+  {id:'time',type:'pick',q:'How much time can you give the System each day?',opts:[['About 15 minutes','15'],['About 30 minutes','30'],['About 1 hour','60'],['90 minutes or more','90']]},
+  {id:'intensity',type:'pick',q:'How hard do you want the System to push you?',opts:[['Gentle: build the habit slowly','gentle'],['Standard: steady growth','standard'],['Hardcore: push my limits','hardcore']]},
+  {id:'goal',type:'text',q:'What is the biggest goal in your life right now? (optional)',ph:'Example: get a job abroad, run a marathon'}
+ ]}
+];
+
+const INS={
+ STR:(a,v)=>v<2.5?'You rarely train, so the plan starts with short sessions you can repeat every day.':v<4?'You have a base to build on. The load rises as you level.':'Your body is already a strength. Expect heavier targets early.',
+ VIT:(a,v)=>+a.vit1<=2?'Sleep is your biggest drag on everything else. Bedtime and water come first.':v<3.5?'Recovery is decent but uneven. The System tightens your sleep and food habits.':'Your recovery is solid. Keep it steady while other stats catch up.',
+ INT:(a,v)=>v<2.5?'Learning is not a habit yet. Small daily sessions come before big courses.':v<4?'You learn when you can. Daily practice will make it automatic.':'You learn consistently. Expect deeper study blocks.',
+ WIS:(a,v)=>v<2.5?'Your inner life gets little attention. Short daily moments of quiet will build it.':v<4?'You have a practice but it is irregular. The plan makes it daily.':'A strong inner base. It will carry the other stats.',
+ DIS:(a,v)=>+a.dis3<=2?'Your phone is eating your focus. Phone-free blocks appear in your early quests.':v<3?'Follow-through is your weak spot. The plan trains it with small finishes.':v<4?'Decent discipline. Streaks will push it further.':'Strong discipline. This is your engine.',
+ CHA:(a,v)=>v<2.5?'You keep to yourself. The plan starts with easy, low-pressure contact.':v<4?'Your circle is okay. Quests deepen the bonds you already have.':'You connect easily. Expect leadership-style challenges.',
+ WLT:(a,v)=>v<2.5?'Money and career feel loose. Tracking and small savings come first.':v<4?'Some structure exists. The plan adds steady income-building time.':'Strong money habits. Targets move toward growth.'
+};
+
+function sc(base,lv,m,step){return Math.max(step,Math.round(base*(1+Math.min(lv,40)*0.1)*m/step)*step)}
+const TPL={
+ STR:[
+  {id:'s1',tag:'home',f:(l,m)=>`Do ${sc(15,l,m,5)} push-ups and ${sc(20,l,m,5)} squats`},
+  {id:'s2',tag:'home',f:(l,m)=>`Hold a plank for ${sc(40,l,m,5)} seconds, 3 rounds`},
+  {id:'s3',tag:'gym',f:(l,m)=>`Strength session at the gym for ${sc(30,l,m,5)} minutes`},
+  {id:'s4',tag:'cardio',f:(l,m)=>`Run or jog for ${sc(15,l,m,5)} minutes`},
+  {id:'s5',tag:'walk',f:(l,m)=>`Walk briskly for ${sc(25,l,m,5)} minutes`},
+  {id:'s6',tag:'sport',f:(l,m)=>`Play your sport for ${sc(30,l,m,5)} minutes`},
+  {id:'s7',f:(l,m)=>`Stretch and do mobility work for ${sc(10,l,m,5)} minutes`}
+ ],
+ VIT:[
+  {id:'v1',f:(l)=>`Drink ${Math.min(3,2+l*0.02).toFixed(1)} L of water today`},
+  {id:'v2',f:()=>'Be in bed with lights out by 11 pm'},
+  {id:'v3',f:()=>'Eat one home-cooked, balanced meal'},
+  {id:'v4',f:()=>'No sugary drinks or junk snacks today'},
+  {id:'v5',f:(l,m)=>`Get ${sc(10,l,1,5)} minutes of morning sunlight`},
+  {id:'v6',f:()=>'Stand up and stretch every hour while you work'}
+ ],
+ INT:[
+  {id:'i1',tag:'read',f:(l,m)=>`Read ${sc(10,l,m,5)} pages of a book`},
+  {id:'i2',tag:'learn',f:(l,m,sv)=>`Take ${sc(25,l,m,5)} minutes of lessons on ${sv.skill||'a skill you chose'}`},
+  {id:'i3',tag:'practice',f:(l,m,sv)=>`Practice ${sv.skill||'your skill'} hands-on for ${sc(30,l,m,5)} minutes`},
+  {id:'i4',tag:'review',f:(l,m)=>`Write a ${sc(3,l,m,1)}-line summary of something you learned today`},
+  {id:'i5',f:()=>'Learn one new concept and explain it in your own words'},
+  {id:'i6',f:(l,m)=>`Study for ${sc(30,l,m,5)} minutes with your phone in another room`}
+ ],
+ WIS:[
+  {id:'w1',tag:'pray',f:(l,m)=>`Pray for ${sc(10,l,m,5)} minutes`},
+  {id:'w2',tag:'meditate',f:(l,m)=>`Meditate for ${sc(8,l,m,1)} minutes`},
+  {id:'w3',tag:'journal',f:(l,m)=>`Journal for ${sc(10,l,m,5)} minutes`},
+  {id:'w4',tag:'gratitude',f:(l)=>`Write down ${3+Math.floor(l/10)} things you are grateful for`},
+  {id:'w5',tag:'nature',f:(l,m)=>`Spend ${sc(15,l,m,5)} quiet minutes outdoors without your phone`},
+  {id:'w6',f:()=>'Reflect: what went well today, and what will you fix tomorrow?'}
+ ],
+ DIS:[
+  {id:'d1',f:()=>'Wake up at your target time and make your bed'},
+  {id:'d2',f:(l,m)=>`Do your hardest task first, for ${sc(25,l,m,5)} minutes`},
+  {id:'d3',f:(l,m)=>`Keep your phone away for ${sc(60,l,m,15)} minutes of focused work`},
+  {id:'d4',f:()=>'Plan tomorrow in writing before bed'},
+  {id:'d5',f:(l)=>`Finish ${Math.min(5,2+Math.floor(l/8))} small tasks you have been postponing`},
+  {id:'d6',f:()=>'Do one thing you have been avoiding for 10 minutes'}
+ ],
+ CHA:[
+  {id:'c1',f:()=>'Message or call someone you care about'},
+  {id:'c2',f:(l,m)=>`Talk with family for ${sc(15,l,m,5)} minutes, phone away`},
+  {id:'c3',f:(l)=>`Sincerely thank or compliment ${Math.min(5,1+Math.floor(l/10))} people`},
+  {id:'c4',f:()=>'Start a conversation with someone new'},
+  {id:'c5',f:()=>'Do something kind for someone without being asked'},
+  {id:'c6',f:(l)=>`In one conversation, ask ${Math.min(5,2+Math.floor(l/12))} follow-up questions and just listen`}
+ ],
+ WLT:[
+  {id:'m1',f:()=>'Track all your spending today'},
+  {id:'m2',f:(l,m)=>`Work on your career or income goal for ${sc(25,l,m,5)} minutes`},
+  {id:'m3',f:()=>'Set aside some money, even a small amount'},
+  {id:'m4',f:(l,m)=>`Learn about one money or business topic for ${sc(15,l,m,5)} minutes`},
+  {id:'m5',f:()=>'Reach out about one opportunity: a job, client, or deal'},
+  {id:'m6',f:()=>'Review your budget and goals for 10 minutes'}
+ ]
+};
+const DT={
+ STR:[n=>`Complete ${n} full workouts`,n=>`Move your body for 30+ minutes on ${n} days`],
+ VIT:[n=>`Hit your sleep target ${n} nights`,n=>`Eat clean and stay hydrated for ${n} days`],
+ INT:[n=>`Finish ${n} deep study sessions`,n=>`Learn something new on ${n} different days`],
+ WIS:[n=>`Keep your spiritual practice for ${n} days`,n=>`Reflect in writing on ${n} days`],
+ DIS:[n=>`Wake up on time ${n} days`,n=>`Do your hardest task first on ${n} days`],
+ CHA:[n=>`Have ${n} meaningful conversations`,n=>`Reach out to ${n} people you care about`],
+ WLT:[n=>`Put ${n} sessions into your career or income goal`,n=>`Track your spending for ${n} days`]
+};
+
+const TITLES=[
+ ['Awakened','Complete your first quest',g=>g.totalDone>=1],
+ ['Iron Will','Reach a 7-day streak',g=>g.best>=7],
+ ['Unbroken','Reach a 30-day streak',g=>g.best>=30],
+ ['Centurion','Reach a 100-day streak',g=>g.best>=100],
+ ['Penalty Survivor','Clear a penalty quest',g=>g.penClr>=1],
+ ['Dungeon Clearer','Clear a dungeon',g=>g.cleared>=1],
+ ['Well Rounded','Get every stat to level 3',g=>SK.every(k=>slvl(g.xp[k])>=3)],
+ ['Pathfinder','Clear 3 phases',g=>g.phase>=3],
+ ['Ascendant','Clear 10 phases',g=>g.phase>=10],
+ ['Rank D Hunter','Reach rank D',g=>lvl(total(g))>=8],
+ ['Rank C Hunter','Reach rank C',g=>lvl(total(g))>=16],
+ ['Rank B Hunter','Reach rank B',g=>lvl(total(g))>=25],
+ ['Rank A Hunter','Reach rank A',g=>lvl(total(g))>=35],
+ ['Rank S Hunter','Reach rank S',g=>lvl(total(g))>=50],
+ ['Monarch','Reach Monarch rank',g=>lvl(total(g))>=75]
+];
+
+/* ============ Helpers ============ */
+function uid(){return Math.random().toString(36).slice(2,10)}
+function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function today(){return fmt(new Date())}
+function yesterday(){const d=new Date();d.setDate(d.getDate()-1);return fmt(d)}
+function weekKey(){const d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7));return fmt(d)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function hstr(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19}return (h^(h>>>16))>>>0}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function wpick(items,ws,r){let x=r()*ws.reduce((a,b)=>a+b,0);for(let i=0;i<items.length;i++){x-=ws[i];if(x<=0)return items[i]}return items[items.length-1]}
+async function hash(pw,salt){
+  const s=salt+':'+pw;
+  try{
+    if(window.crypto&&crypto.subtle){
+      const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+      return Array.from(new Uint8Array(d)).map(x=>x.toString(16).padStart(2,'0')).join('');
+    }
+  }catch(e){}
+  let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;
+  return 'f'+(h>>>0).toString(16);
+}
+
+/* Game math (all take the game state g) */
+function total(g){return SK.reduce((a,k)=>a+(g.xp[k]||0),0)}
+function lvl(t){return 1+Math.floor(Math.sqrt(t/40))}
+function slvl(x){return 1+Math.floor(Math.sqrt(x/25))}
+function xpAt(l){return 25*Math.pow(l-1,2)}
+function rank(l){
+  if(l>=75)return 'Monarch '+(Math.floor((l-75)/25)+1);
+  let r='E';RANKS.forEach(p=>{if(l>=p[1])r=p[0]});return r;
+}
+function weakest(g){
+  const v=SK.map(k=>g.xp[k]||0),mn=Math.min(...v),mx=Math.max(...v);
+  return mx===mn?null:SK[v.indexOf(mn)];
+}
+function award(g,stat,base){return Math.round(base*(weakest(g)===stat?1.25:1))}
+function allDone(g){const t=today();return g.quests.length>0&&g.quests.every(q=>q.doneOn===t)}
+function effStreak(g){return g.streak+(allDone(g)?1:0)}
+function glog(g,m){g.log.unshift({t:Date.now(),m});if(g.log.length>40)g.log.length=40}
+function phaseName(p){return PHASE_NAMES[p%PHASE_NAMES.length]+(p>=PHASE_NAMES.length?' '+(Math.floor(p/PHASE_NAMES.length)+1):'')}
+
+/* ============ Storage ============ */
+let DB=null, me=null;
+const ui={tab:'status',atab:'login',au:'users',vuser:null,vtab:'overview',form:null,conf:null,up:null,sv:null,dat:''};
+
+let snap={},saving=false,again=false,stm=null;
+async function api(action,data){
+  const h={'Content-Type':'application/json'},t=getSession();if(t)h.Authorization='Bearer '+t;
+  try{const r=await fetch('/api',{method:'POST',headers:h,body:JSON.stringify(Object.assign({action},data||{}))});
+    const j=await r.json().catch(()=>({}));j.status=r.status;return j}catch(e){return {error:'network',status:0}}
+}
+function savedTheme(){try{return localStorage.getItem('the-system-theme')||'auto'}catch(e){return 'auto'}}
+function applyState(j){
+  DB={v:2,theme:savedTheme(),users:j.users||[]};
+  snap={};DB.users.forEach(u=>snap[u.id]=JSON.stringify(u));
+  me=DB.users.find(u=>u.id===j.me)||null;
+}
+function dirty(){return DB.users.some(u=>snap[u.id]!==JSON.stringify(u))}
+function saveDB(){if(!me)return;clearTimeout(stm);stm=setTimeout(push,250)}
+async function push(){
+  if(saving){again=true;return}
+  saving=true;
+  try{
+    const admin=me&&me.role==='admin';
+    const users=DB.users.filter(u=>snap[u.id]!==JSON.stringify(u));
+    const deleted=admin?Object.keys(snap).filter(id=>!DB.users.some(x=>x.id===id)):[];
+    if(users.length||deleted.length){
+      const r=await api('save',{users,deleted});
+      if(r.ok){users.forEach(u=>snap[u.id]=JSON.stringify(u));deleted.forEach(id=>delete snap[id])}
+      else toast(r.status===401?'[System] Session expired. Please log in again.':'[System] Could not save ('+(r.error||'offline')+'). Will retry.');
+    }
+  }finally{saving=false;if(again){again=false;push()}}
+}
+async function refresh(){
+  if(!me||me.role!=='admin'||ui.form||saving||dirty())return;
+  const r=await api('state',{});
+  if(r.users){applyState(r);render()}
+}
+function setSession(t){try{if(t)localStorage.setItem(SES,t);else localStorage.removeItem(SES)}catch(e){}}
+function getSession(){try{return localStorage.getItem(SES)}catch(e){return null}}
+function userById(id){return DB.users.find(u=>u.id===id)||null}
+function nameTaken(n,exceptId){return DB.users.some(u=>u.username.toLowerCase()===n.toLowerCase()&&u.id!==exceptId)}
+function validName(n){return /^[A-Za-z0-9_.-]{3,20}$/.test(n)}
+async function makeUser(username,pw,role){
+  const salt=uid();
+  return {id:uid(),username,salt,ph:await hash(pw,salt),role,created:Date.now(),disabled:false,defaultPw:false,survey:null,analysis:null,g:null};
+}
+
+/* ============ Feedback ============ */
+function toast(m){
+  const el=document.createElement('div');el.className='toast';el.textContent=m;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>{if(el.parentNode)el.parentNode.removeChild(el)},3400);
+}
+
+/* ============ Survey analysis and game setup ============ */
+function analyze(user){
+  const a=user.survey.ans,scores={},labels={},insights={};
+  SURVEY.forEach(sec=>{
+    if(!sec.stat)return;
+    const rs=sec.qs.filter(q=>q.type==='rate');
+    const v=rs.reduce((s,q)=>s+(+a[q.id]||1),0)/rs.length;
+    scores[sec.stat]=Math.round(v*10)/10;
+    labels[sec.stat]=v<2?'Weak':v<3?'Developing':v<4?'Solid':'Strong';
+    insights[sec.stat]=INS[sec.stat](a,v);
+  });
+  const order=SK.slice().sort((x,y)=>scores[x]-scores[y]||hstr(user.id+x)-hstr(user.id+y));
+  const strongest=order[order.length-1],weak=[order[0],order[1]];
+  const sv=user.survey;
+  const cnt=questCount(sv);
+  const archetype=ARCH[strongest];
+  const summary=`You read as ${archetype}. Your strongest stat is ${strongest} (${scores[strongest]} of 5). The System will start with ${weak[0]} and ${weak[1]}, your two weakest. Expect about ${cnt} quests a day, around ${sv.time} minutes, at ${sv.intensity} intensity.`;
+  return {scores,labels,insights,archetype,strongest,weak,summary};
+}
+function questCount(sv){
+  let c={15:3,30:4,60:5,90:6}[sv.time]||4;
+  if(sv.intensity==='hardcore')c++;if(sv.intensity==='gentle')c=Math.max(3,c-1);
+  return Math.min(c,8);
+}
+function allowed(t,k,sv){const p=(sv.prefs&&sv.prefs[k])||[];return !t.tag||!p.length||p.indexOf(t.tag)>=0}
+function xpFor(l,m){return Math.max(5,Math.round((10+Math.min(l,300)*0.9)*m))}
+
+function genQuests(user,g,date){
+  const sv=user.survey,r=mulberry32(hstr(user.id+'|'+date+'|q'));
+  const m={gentle:0.75,standard:1,hardcore:1.35}[sv.intensity]||1;
+  const count=questCount(sv);
+  const lv={};SK.forEach(k=>lv[k]=slvl(g.xp[k]));
+  const maxL=Math.max(...SK.map(k=>lv[k]));
+  const chosen=[];
+  g.focus.forEach(k=>{if(chosen.length<count)chosen.push(k)});
+  while(chosen.length<count){
+    const cap=count>7?2:1;
+    const pool=SK.filter(k=>chosen.filter(c=>c===k).length<cap);
+    if(!pool.length)break;
+    chosen.push(wpick(pool,pool.map(k=>1+(maxL-lv[k])*0.35),r));
+  }
+  const used=[],out=[];
+  chosen.forEach(k=>{
+    const all=TPL[k].filter(t=>allowed(t,k,sv));
+    let pool=all.filter(t=>(g.lastTpl||[]).indexOf(t.id)<0&&used.indexOf(t.id)<0);
+    if(!pool.length)pool=all.filter(t=>used.indexOf(t.id)<0);
+    if(!pool.length)pool=all;
+    const t=pool[Math.floor(r()*pool.length)];
+    used.push(t.id);
+    out.push({id:uid(),t:t.f(lv[k],m,sv),s:k,x:xpFor(lv[k],m),gen:true});
+  });
+  g.lastTpl=used;
+  return out;
+}
+function genDungeons(user,g){
+  const r=mulberry32(hstr(user.id+'|d|'+g.phase));
+  return g.focus.map(k=>{
+    const variants=DT[k],f=variants[Math.floor(r()*variants.length)];
+    const n=Math.min(40,6+g.phase*2);
+    return {id:uid(),t:f(n),s:k,x:80+g.phase*25,n,p:0,gen:true,ph:g.phase};
+  });
+}
+function pickFocus(user,g,xpMap,phase){
+  const order=SK.slice().sort((x,y)=>slvl(xpMap[x])-slvl(xpMap[y])||hstr(user.id+x+phase)-hstr(user.id+y+phase));
+  return [order[0],order[1]];
+}
+function setPhase(user,g){
+  g.focus=pickFocus(user,g,g.xp,g.phase);
+  g.target={};g.focus.forEach(k=>g.target[k]=slvl(g.xp[k])+3);
+  g.dungeons=g.dungeons.filter(d=>!d.gen).concat(genDungeons(user,g));
+}
+function checkPhase(user,g){
+  if(g.focus&&g.focus.every(k=>slvl(g.xp[k])>=g.target[k])){
+    const done=g.phase;
+    g.phase++;
+    setPhase(user,g);
+    glog(g,`Phase cleared: ${phaseName(done)}. Next: ${phaseName(g.phase)}.`);
+    toast(`[Phase cleared] ${phaseName(done)}. Now: ${phaseName(g.phase)}.`);
+  }
+}
+function initGame(user){
+  const an=user.analysis,xp={};
+  SK.forEach(k=>{xp[k]=xpAt(Math.max(1,Math.round(an.scores[k])))});
+  const g={xp,quests:[],dungeons:[],last:today(),streak:0,best:0,restDay:null,restWeek:null,penalty:null,
+    totalDone:0,cleared:0,penClr:0,title:'',unlocked:[],phase:0,focus:[],target:{},lastTpl:[],
+    log:[{t:Date.now(),m:'The System has awakened. Your road has been built.'}]};
+  user.g=g;
+  setPhase(user,g);
+  g.quests=genQuests(user,g,today());
+  if(user.survey.goal)g.dungeons.push({id:uid(),t:'Main quest: '+user.survey.goal,s:'DIS',x:300,n:30,p:0,gen:false,main:true});
+}
+function gain(g,stat,amt){
+  const l0=lvl(total(g)),s0=slvl(g.xp[stat]);
+  g.xp[stat]=Math.max(0,(g.xp[stat]||0)+amt);
+  const l1=lvl(total(g)),s1=slvl(g.xp[stat]);
+  if(amt>0){
+    if(s1>s0){toast(stat+' reached level '+s1+'.');glog(g,stat+' reached level '+s1+'.')}
+    if(l1>l0){
+      ui.up={l:l1,r0:rank(l0),r1:rank(l1)};
+      glog(g,'Level up. You are now level '+l1+(rank(l0)!==rank(l1)?' and rank '+rank(l1):'')+'.');
+    }
+  }
+}
+function rollover(user){
+  const g=user.g;if(!g)return false;
+  const t=today();if(g.last===t)return false;
+  const consecutive=g.last===yesterday();
+  const rested=g.restDay===g.last;
+  const allOk=consecutive&&g.quests.every(q=>q.doneOn===g.last);
+  if(g.penalty&&!g.penalty.done){
+    g.xp.DIS=Math.max(0,g.xp.DIS-40);
+    glog(g,'Penalty quest ignored. Lost 40 DIS XP.');
+    toast('[Penalty] You skipped the penalty quest. -40 DIS XP.');
+  }
+  g.penalty=null;
+  if(rested&&consecutive){glog(g,'Rest day used. Your streak is safe.')}
+  else if(allOk){g.streak+=1;if(g.streak>g.best)g.best=g.streak}
+  else{
+    if(g.streak>0)glog(g,'Streak broken at '+g.streak+' days.');
+    g.streak=0;
+    g.penalty={t:PENALTIES[Math.floor(Math.random()*PENALTIES.length)],done:false};
+    glog(g,'Daily quests were not all cleared. A penalty quest has appeared.');
+    toast('[Penalty quest] A penalty quest has appeared.');
+  }
+  const keep=g.quests.filter(q=>q.keep).map(q=>Object.assign({},q,{doneOn:null,award:0}));
+  g.quests=keep.concat(genQuests(user,g,t));
+  g.last=t;
+  return true;
+}
+function commit(){
+  if(me&&me.role==='user'&&me.g){
+    const g=me.g;
+    checkPhase(me,g);
+    const eff=effStreak(g);if(eff>g.best)g.best=eff;
+    TITLES.forEach(T=>{
+      if(g.unlocked.indexOf(T[0])<0&&T[2](g)){
+        g.unlocked.push(T[0]);if(!g.title)g.title=T[0];
+        toast('[Title unlocked] '+T[0]);glog(g,'Title unlocked: '+T[0]+'.');
+      }
+    });
+  }
+  saveDB();render();
+}
+
+/* ============ Shared view pieces ============ */
+function radar(xp){
+  const cx=170,cy=160,R=104,n=SK.length;
+  const lv=SK.map(k=>slvl(xp[k]));
+  const scale=Math.max(5,Math.ceil(Math.max(...lv)*1.25));
+  const pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/n;return [cx+Math.cos(a)*r,cy+Math.sin(a)*r]};
+  const poly=rf=>SK.map((_,i)=>{const p=pt(i,R*rf);return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ');
+  let o='<svg class="radar" viewBox="0 0 340 320" role="img" aria-label="Stat chart">';
+  [0.25,0.5,0.75,1].forEach(f=>{o+=`<polygon class="rg" points="${poly(f)}"/>`});
+  SK.forEach((_,i)=>{const p=pt(i,R);o+=`<line class="rs" x1="${cx}" y1="${cy}" x2="${p[0].toFixed(1)}" y2="${p[1].toFixed(1)}"/>`});
+  const dp=SK.map((_,i)=>{const p=pt(i,R*Math.min(1,lv[i]/scale));return p[0].toFixed(1)+','+p[1].toFixed(1)}).join(' ');
+  o+=`<polygon class="rd" points="${dp}"/>`;
+  SK.forEach((k,i)=>{
+    const p=pt(i,R+22);
+    o+=`<text class="rl" x="${p[0].toFixed(1)}" y="${(p[1]+2).toFixed(1)}">${k}</text><text class="rv" x="${p[0].toFixed(1)}" y="${(p[1]+16).toFixed(1)}">Lv ${lv[i]}</text>`;
+  });
+  return o+'</svg>';
+}
+function statRows(g){
+  const wk=weakest(g);
+  return STATS.map(s=>{
+    const x=g.xp[s.k],l=slvl(x),a=xpAt(l),b=xpAt(l+1),p=(x-a)/(b-a)*100;
+    return `<div class="stat"><div class="sk">${s.k}</div><div><div class="sn">${s.n}${wk===s.k?'<span class="bonus">+25% XP</span>':''}</div><div class="sd">${s.d}</div></div><div class="sl">${l}</div><div class="bar"><i style="width:${p.toFixed(1)}%"></i></div></div>`;
+  }).join('');
+}
+function heroBlock(user,editableName){
+  const g=user.g,T=total(g),L=lvl(T),a=40*Math.pow(L-1,2),b=40*L*L,pct=Math.max(0,Math.min(100,(T-a)/(b-a)*100));
+  const rk=rank(L);
+  return `<section class="win hero"><h2 class="wt">[ Status ]</h2>
+    ${editableName?`<div class="name" style="border:0;padding-bottom:0">${esc(user.username)}</div>`:`<div class="name" style="border:0;padding-bottom:0">${esc(user.username)}</div>`}
+    <div class="ttl">${g.title?'Title: '+esc(g.title):'No title yet. Clear your first quest.'}</div>
+    <div class="lvrow"><div class="lv">Level<b>${L}</b></div><div class="rk" style="${rk.length>1?'font-size:22px':''}">Rank ${esc(rk)}</div></div>
+    <div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div>
+    <div class="barinfo"><span>${T-a} / ${b-a} XP to next level</span><span>Streak: ${effStreak(g)} days</span></div></section>`;
+}
+function projectPhases(user,count){
+  const g=user.g,xp=Object.assign({},g.xp),out=[];
+  g.focus.forEach(k=>{xp[k]=Math.max(xp[k],xpAt(g.target[k]))});
+  for(let i=1;i<=count;i++){
+    const p=g.phase+i,f=pickFocus(user,g,xp,p),t={};
+    f.forEach(k=>{t[k]=slvl(xp[k])+3;xp[k]=xpAt(t[k])});
+    out.push({p,f,t});
+  }
+  return out;
+}
+function roadmapHTML(user){
+  const g=user.g,an=user.analysis;
+  let h='';
+  if(an){
+    h+=`<section class="win hero"><h2 class="wt">[ Your analysis ]</h2><div class="arch">${esc(an.archetype)}</div><p class="sub c">${esc(an.summary)}</p>`;
+    SK.forEach(k=>{
+      const s=STATS.find(x=>x.k===k);
+      h+=`<div class="ins"><div class="insh"><b>${k}</b><span>${s.n}</span><span class="lab ${an.labels[k]}">${an.labels[k]}</span></div><div class="itxt">${esc(an.insights[k])}</div></div>`;
+    });
+    h+='</section>';
+  }
+  h+=`<section class="win"><h2 class="wt">[ Current phase ]</h2><div class="phn c">Phase ${g.phase+1}: ${esc(phaseName(g.phase))}</div><p class="sub c">Raise your two focus stats to their targets to clear this phase.</p>`;
+  g.focus.forEach(k=>{
+    const x=g.xp[k],need=xpAt(g.target[k]),pct=Math.min(100,x/need*100);
+    h+=`<div class="tgt"><div class="barinfo"><span>${k}: level ${slvl(x)}</span><span>Target: level ${g.target[k]}</span></div><div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div></div>`;
+  });
+  h+=`<p class="sub" style="margin:14px 0 0">Phases cleared so far: ${g.phase}</p></section>`;
+  h+='<section class="win"><h2 class="wt">[ Road ahead ]</h2>';
+  projectPhases(user,3).forEach(ph=>{
+    h+=`<div class="ph"><div class="phn">Phase ${ph.p+1}: ${esc(phaseName(ph.p))}</div><div class="phf">Focus on ${ph.f.join(' and ')}. Aim for ${ph.f.map(k=>k+' level '+ph.t[k]).join(' and ')}.</div></div>`;
+  });
+  h+=`<div class="ph"><div class="phn">And onward</div><div class="phf">After every phase the System reads your stats and builds the next one. There is no final level, and no two hunters walk the same road.</div></div></section>`;
+  return h;
+}
+function qRowUser(q,g){
+  const d=q.doneOn===today();
+  return `<div class="row${d?' done':''}"><button class="chk" data-a="tq" data-id="${q.id}" aria-pressed="${d}" aria-label="${d?'Undo ':'Complete '}${esc(q.t)}"></button>
+    <div class="rb"><div class="rt">${esc(q.t)}</div><div class="rm"><span class="tag">${q.s}</span><span class="xp">+${d?q.award:award(g,q.s,q.x)} XP</span>${q.gen?'':'<span class="badge">Assigned</span>'}</div></div></div>`;
+}
+function dungeonRows(g,admin,uidv){
+  if(!g.dungeons.length)return '<div class="empty">No dungeons open.</div>';
+  return g.dungeons.map(d=>{
+    const cl=d.p>=d.n,pct=Math.min(100,d.p/d.n*100);
+    let ctrl='';
+    if(admin)ctrl=`<span class="acts"><button class="btn ghost sm" data-a="editForm" data-id="d:${d.id}">Edit</button><button class="btn warn ghost sm" data-a="delItem" data-id="d:${d.id}">Delete</button></span>`;
+    else ctrl=cl?'<span class="cleared">Cleared</span>':`<span class="acts"><button class="btn ghost sm" data-a="back" data-id="${d.id}">Undo step</button><button class="btn sm" data-a="adv" data-id="${d.id}">Complete a step</button></span>`;
+    return `<div class="dg"><div class="dgh"><div><div class="dgt">${esc(d.t)}</div><div class="dgr"><span class="tag">${d.s}</span> &nbsp;Reward +${d.x} XP${d.gen?'':' &nbsp;<span class="badge">Assigned</span>'}</div></div></div>
+      <div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div><div class="dgc"><span class="pill">${d.p} / ${d.n} steps</span>${ctrl}</div></div>`;
+  }).join('');
+}
+
+/* ============ Views: auth ============ */
+function vAuth(){
+  const reg=ui.atab==='register';
+  let h=`<section class="win hero"><h2 class="wt">[ The System ]</h2>
+    <p class="sub c">${reg?'Create your hunter account. A short survey comes next so the System can build your road.':'Log in to open your status window.'}</p>
+    <div class="chips" style="justify-content:center;margin-bottom:16px"><button class="chip${!reg?' on':''}" data-a="atab" data-id="login">Log in</button><button class="chip${reg?' on':''}" data-a="atab" data-id="register">Create account</button></div>`;
+  if(!reg){
+    h+=`<label class="field"><span>Username</span><input id="lu" autocomplete="username" autocapitalize="none" data-enter="blogin"></label>
+    <label class="field"><span>Password</span><input id="lp" type="password" autocomplete="current-password" data-enter="blogin"></label>
+    <button class="btn block" id="blogin" data-a="login">Log in</button>`;
+  }else{
+    h+=`<label class="field"><span>Username (3 to 20 letters, numbers, . _ -)</span><input id="ru" autocomplete="username" autocapitalize="none" maxlength="20" data-enter="breg"></label>
+    <label class="field"><span>Password (at least 4 characters)</span><input id="rp" type="password" autocomplete="new-password" data-enter="breg"></label>
+    <label class="field"><span>Repeat password</span><input id="rp2" type="password" autocomplete="new-password" data-enter="breg"></label>
+    <button class="btn block" id="breg" data-a="register">Create account</button>`;
+  }
+  return h+`<p class="sub c" style="margin:14px 0 0;font-size:13px">Accounts are stored in this browser.</p></section>`;
+}
+
+/* ============ Views: survey ============ */
+function vSurvey(){
+  let h=`<section class="win hero"><h2 class="wt">[ Awakening survey ]</h2><p class="sub c">Answer honestly. The System uses your answers to set your starting stats, build your daily quests, and plan your road. Everyone gets a different one.</p></section>`;
+  SURVEY.forEach(sec=>{
+    h+=`<section class="win"><h2 class="wt">[ ${sec.title} ]</h2>`;
+    sec.qs.forEach(q=>{
+      if(q.type==='text'){
+        h+=`<label class="field" id="f-${q.id}"><span>${esc(q.q)}</span><input id="${q.id}" maxlength="60" placeholder="${esc(q.ph||'')}"></label>`;
+      }else{
+        h+=`<fieldset id="f-${q.id}"><legend>${esc(q.q)}</legend>${q.type==='multi'?'<div class="hint">Optional</div>':''}`;
+        q.opts.forEach(o=>{
+          const val=q.type==='multi'?o[1]:(q.type==='pick'?o[1]:o[1]);
+          h+=`<label class="opt"><input type="${q.type==='multi'?'checkbox':'radio'}" name="${q.id}" value="${esc(val)}"><span>${esc(o[0])}</span></label>`;
+        });
+        h+='</fieldset>';
+      }
+    });
+    h+='</section>';
+  });
+  return h+`<div class="btns"><button class="btn block" data-a="submitSurvey">Build my road</button></div><div class="btns"><button class="btn ghost block" data-a="logout">Log out</button></div>`;
+}
+function vAnalysis(){
+  return roadmapHTML(me)+`<div class="btns"><button class="btn block" data-a="enter">Enter the System</button></div>`;
+}
+
+/* ============ Views: hunter ============ */
+function vStatus(user){
+  const g=user.g;
+  let h=heroBlock(user,false);
+  h+=`<section class="win"><h2 class="wt">[ Stats ]</h2>${radar(g.xp)}${statRows(g)}<p class="sub" style="margin:12px 0 0">Your weakest stat earns bonus XP until you catch it up.</p></section>`;
+  h+='<section class="win"><h2 class="wt">[ Titles ]</h2><div class="chips">';
+  TITLES.forEach(T=>{
+    const u=g.unlocked.indexOf(T[0])>=0;
+    if(u)h+=`<button class="chip${g.title===T[0]?' on':''}" data-a="eqt" data-id="${esc(T[0])}" aria-pressed="${g.title===T[0]}">${esc(T[0])}</button>`;
+    else h+=`<span class="chip lock">${esc(T[0])}<small>${esc(T[1])}</small></span>`;
+  });
+  return h+'</div></section>';
+}
+function vQuests(user){
+  const g=user.g,t=today(),done=g.quests.filter(q=>q.doneOn===t).length;
+  let h='';
+  if(g.penalty&&!g.penalty.done){
+    h+=`<section class="win pen"><h2 class="wt">[ Penalty quest ]</h2><p class="pentxt">${esc(g.penalty.t)}</p><p class="sub c">Clear it today or lose 40 DIS XP tomorrow.</p><div class="btns" style="justify-content:center"><button class="btn warn" data-a="pen">Mark as done</button></div></section>`;
+  }
+  h+=`<section class="win hero"><h2 class="wt">[ Daily quests ]</h2><div class="head2"><span class="big">${done} / ${g.quests.length}</span><span class="pill">New quests at midnight</span></div>`;
+  h+=`<p class="sub">Built for you from your survey and current stats. Focus today: ${g.focus.join(' and ')}.</p>`;
+  if(g.restDay===t)h+='<div class="banner">Rest day active. Missing quests today will not cost you.</div>';
+  if(!g.quests.length)h+='<div class="empty">No quests today. Check back after midnight.</div>';
+  g.quests.forEach(q=>{h+=qRowUser(q,g)});
+  return h+'</section>';
+}
+function vDungeons(user){
+  const g=user.g;
+  return `<section class="win hero"><h2 class="wt">[ Dungeons ]</h2><p class="sub c">Big goals with a big XP payout. A new set appears every phase.</p>${dungeonRows(g,false)}</section>`;
+}
+function vRoadmap(user){return roadmapHTML(user)}
+function vSystem(user){
+  const g=user.g,wkAvail=g.restWeek!==weekKey();
+  let h=`<section class="win hero"><h2 class="wt">[ Rest day ]</h2><p class="sub c">One per week. Use it when life gets in the way and your streak stays safe.</p><div class="btns" style="justify-content:center">${g.restDay===today()?'<span class="cleared">Rest day active today</span>':(wkAvail?'<button class="btn" data-a="rest">Use rest day today</button>':'<span class="pill">Already used this week</span>')}</div></section>`;
+  h+=themeAndAccount(user);
+  h+='<section class="win"><h2 class="wt">[ System log ]</h2>';
+  g.log.slice(0,15).forEach(l=>{h+=`<div class="log">${esc(l.m)}<time>${new Date(l.t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</time></div>`});
+  return h+'</section>';
+}
+function themeAndAccount(user){
+  const th=DB.theme||'auto';
+  return `<section class="win"><h2 class="wt">[ Theme ]</h2><div class="chips" style="justify-content:center">${['auto','dark','light'].map(t=>`<button class="chip${th===t?' on':''}" data-a="theme" data-id="${t}" aria-pressed="${th===t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></section>
+  <section class="win"><h2 class="wt">[ Account: ${esc(user.username)} ]</h2>
+    <label class="field"><span>Current password</span><input id="cpO" type="password" autocomplete="current-password"></label>
+    <label class="field"><span>New password (at least 4 characters)</span><input id="cpN" type="password" autocomplete="new-password"></label>
+    <div class="btns"><button class="btn" data-a="changePw">Change password</button><button class="btn ghost" data-a="logout">Log out</button></div></section>`;
+}
+
+/* ============ Views: admin ============ */
+function adminBanner(){
+  const a=me;
+  return a.defaultPw?'<div class="banner warn">You are still using the default admin password. Change it in Account before sharing this link.</div>':'';
+}
+function vAdminUsers(){
+  let h=adminBanner();
+  h+=`<section class="win hero"><h2 class="wt">[ Accounts ]</h2><p class="sub c">Accounts are stored in the cloud database and work on any device. Use Account to export a backup.</p>`;
+  DB.users.forEach(u=>{
+    const info=u.role==='admin'?'Administrator':(u.g?`Lv ${lvl(total(u.g))}, rank ${rank(lvl(total(u.g)))}`:'Survey pending');
+    const key='delUser:'+u.id,sure=ui.conf===key;
+    h+=`<div class="row"><div class="rb"><div class="rt">${esc(u.username)}${u.disabled?'<span class="badge">Disabled</span>':''}${u.id===me.id?'<span class="badge">You</span>':''}</div><div class="rm"><span class="tag">${u.role==='admin'?'Admin':'Hunter'}</span><span class="xp">${info}</span></div></div>
+      <span class="acts">${u.g?`<button class="btn sm" data-a="viewUser" data-id="${u.id}">View</button>`:''}<button class="btn ghost sm" data-a="editForm" data-id="u:${u.id}">Edit</button>${u.id!==me.id?`<button class="btn warn ghost sm" data-a="delUser" data-id="${u.id}">${sure?'Tap again to delete':'Delete'}</button>`:''}</span></div>`;
+  });
+  h+=`<div class="btns"><button class="btn" data-a="editForm" data-id="u:new">Add account</button></div></section>`;
+  if(ui.form&&ui.form.kind==='u')h+=userForm();
+  return h;
+}
+function userForm(){
+  const f=ui.form,u=f.id?userById(f.id):null;
+  return `<section class="win"><h2 class="wt">[ ${u?'Edit account':'New account'} ]</h2>
+    <label class="field"><span>Username</span><input id="fuN" maxlength="20" autocapitalize="none" value="${esc(u?u.username:'')}"></label>
+    <label class="field"><span>${u?'New password (leave blank to keep the current one)':'Password (at least 4 characters)'}</span><input id="fuP" type="password" autocomplete="new-password"></label>
+    <label class="field"><span>Role</span><select id="fuR"><option value="user"${u&&u.role==='user'?' selected':''}>Hunter</option><option value="admin"${u&&u.role==='admin'?' selected':''}>Admin</option></select></label>
+    ${u?`<label class="chkl"><input type="checkbox" id="fuD"${u.disabled?' checked':''}> Disable this account</label>`:''}
+    <div class="btns"><button class="btn" data-a="saveUser">${u?'Save changes':'Create account'}</button><button class="btn ghost" data-a="closeForm">Cancel</button>
+    ${u&&u.role==='user'?`<button class="btn warn ghost" data-a="resetUser" data-id="${u.id}">${ui.conf==='resetUser:'+u.id?'Tap again to confirm reset':'Reset survey and progress'}</button>`:''}</div></section>`;
+}
+function itemForm(u){
+  const f=ui.form,isQ=f.kind==='q',g=u.g;
+  const it=f.id?(isQ?g.quests:g.dungeons).find(x=>x.id===f.id):null;
+  const sel=it?it.s:'STR';
+  return `<section class="win"><h2 class="wt">[ ${it?'Edit':'New'} ${isQ?'quest':'dungeon'} for ${esc(u.username)} ]</h2>
+    <label class="field"><span>Name</span><input id="fT" maxlength="100" value="${esc(it?it.t:'')}"></label>
+    <div class="two"><label class="field"><span>Stat it trains</span><select id="fS">${STATS.map(s=>`<option value="${s.k}"${s.k===sel?' selected':''}>${s.k} ${s.n}</option>`).join('')}</select></label>
+    <label class="field"><span>XP reward</span><input id="fX" type="number" min="5" max="1000" value="${it?it.x:(isQ?15:150)}"></label></div>
+    ${isQ?`<label class="chkl"><input type="checkbox" id="fK"${it&&it.keep?' checked':''}> Repeat every day</label>`:`<label class="field"><span>Steps to clear it</span><input id="fN" type="number" min="1" max="500" value="${it?it.n:10}"></label>`}
+    <div class="btns"><button class="btn" data-a="saveItem">${it?'Save changes':'Add'}</button><button class="btn ghost" data-a="closeForm">Cancel</button></div></section>`;
+}
+function vAdminUser(){
+  const u=userById(ui.vuser);
+  if(!u||!u.g){ui.vuser=null;return vAdminUsers()}
+  const g=u.g;
+  let h=`<div class="btns" style="margin:0 0 14px"><button class="btn ghost sm" data-a="backUsers">Back to accounts</button></div>`;
+  h+=`<div class="chips" style="margin-bottom:16px">${[['overview','Overview'],['quests','Quests'],['dungeons','Dungeons'],['roadmap','Roadmap']].map(t=>`<button class="chip${ui.vtab===t[0]?' on':''}" data-a="vtab" data-id="${t[0]}">${t[1]}</button>`).join('')}</div>`;
+  if(ui.vtab==='overview'){
+    h+=heroBlock(u,false);
+    h+=`<section class="win"><h2 class="wt">[ Stats ]</h2>${radar(g.xp)}${statRows(g)}<p class="sub" style="margin:12px 0 0">Last active: ${esc(g.last)}. Phase ${g.phase+1}: ${esc(phaseName(g.phase))}.</p></section>`;
+  }else if(ui.vtab==='quests'){
+    const t=today();
+    h+=`<section class="win hero"><h2 class="wt">[ ${esc(u.username)}: quests ]</h2><p class="sub c">The hunter's current list. Changes appear the next time they open the app.</p>`;
+    if(!g.quests.length)h+='<div class="empty">No quests in the list.</div>';
+    g.quests.forEach(q=>{
+      const d=q.doneOn===t;
+      h+=`<div class="row${d?' done':''}"><div class="rb"><div class="rt">${esc(q.t)}</div><div class="rm"><span class="tag">${q.s}</span><span class="xp">+${q.x} XP</span><span class="badge">${d?'Done today':'Pending'}</span>${q.gen?'':'<span class="badge">Assigned</span>'}${q.keep?'<span class="badge">Repeats daily</span>':''}</div></div>
+        <span class="acts"><button class="btn ghost sm" data-a="editForm" data-id="q:${q.id}">Edit</button><button class="btn warn ghost sm" data-a="delItem" data-id="q:${q.id}">Delete</button></span></div>`;
+    });
+    h+=`<div class="btns"><button class="btn" data-a="editForm" data-id="q:new">Add quest</button></div></section>`;
+    if(ui.form&&ui.form.kind==='q')h+=itemForm(u);
+  }else if(ui.vtab==='dungeons'){
+    h+=`<section class="win hero"><h2 class="wt">[ ${esc(u.username)}: dungeons ]</h2>${dungeonRows(g,true)}<div class="btns"><button class="btn" data-a="editForm" data-id="d:new">Add dungeon</button></div></section>`;
+    if(ui.form&&ui.form.kind==='d')h+=itemForm(u);
+  }else{
+    h+=roadmapHTML(u);
+  }
+  return h;
+}
+function vAdminAccount(){
+  return adminBanner()+themeAndAccount(me)+`<section class="win"><h2 class="wt">[ Backup all accounts ]</h2><p class="sub">Export everything as text, then import it in another browser to carry accounts and progress across devices. Import replaces all accounts in this browser.</p>
+    <label class="field"><span>Backup text</span><textarea id="dat" spellcheck="false">${esc(ui.dat)}</textarea></label>
+    <div class="btns"><button class="btn" data-a="export">Export</button><button class="btn ghost" data-a="import">Import</button></div></section>`;
+}
+
+/* ============ Render ============ */
+function render(){
+  const v=document.getElementById('view'),nav=document.getElementById('nav'),wrap=document.getElementById('navwrap');
+  let html='',tabs=null,cur=null;
+  if(!me){html=vAuth()}
+  else if(me.role==='admin'){
+    tabs=[['users','Users'],['account','Account']];cur=ui.au;
+    html=ui.au==='account'?vAdminAccount():(ui.vuser?vAdminUser():vAdminUsers());
+  }else if(!me.survey||!me.g){html=vSurvey()}
+  else if(ui.sv==='analysis'){html=vAnalysis()}
+  else{
+    tabs=[['status','Status'],['quests','Quests'],['dungeons','Dungeons'],['roadmap','Road'],['system','More']];cur=ui.tab;
+    html={status:vStatus,quests:vQuests,dungeons:vDungeons,roadmap:vRoadmap,system:vSystem}[ui.tab](me);
+  }
+  v.innerHTML=html;
+  if(tabs){
+    nav.style.gridTemplateColumns='repeat('+tabs.length+',1fr)';
+    nav.innerHTML=tabs.map(t=>`<button data-a="tab" data-id="${t[0]}"${cur===t[0]?' aria-current="page"':''}>${t[1]}</button>`).join('');
+    wrap.style.display='';
+  }else{nav.innerHTML='';wrap.style.display='none'}
+  const th=DB.theme||'auto',r=document.documentElement;
+  if(th==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',th);
+  const ov=document.getElementById('ov');
+  if(ui.up){
+    const u=ui.up;
+    ov.innerHTML=`<div class="up"><h2>[ Level up ]</h2><div class="n">${u.l}</div><p>${u.r0!==u.r1?'You reached rank '+esc(u.r1)+'.':'Keep going. The next level is closer than it looks.'}</p><button class="btn" data-a="closeUp">Continue</button></div>`;
+    ov.className='show';
+  }else{ov.className='';ov.innerHTML=''}
+}
+
+/* ============ Actions ============ */
+function findQ(g,id){return g.quests.find(q=>q.id===id)||null}
+function findD(g,id){return g.dungeons.find(d=>d.id===id)||null}
+function lastAdmins(excludeId){return DB.users.filter(u=>u.role==='admin'&&!u.disabled&&u.id!==excludeId).length}
+
+const A={
+  atab:id=>{ui.atab=id;render()},
+  login:async()=>{
+    const n=document.getElementById('lu').value.trim(),p=document.getElementById('lp').value;
+    const sl=await api('salt',{username:n});
+    if(!sl.salt){toast('Cannot reach the server. Try again.');return}
+    const r=await api('login',{username:n,ph:await hash(p,sl.salt)});
+    if(r.status===403){toast('This account is disabled. Ask an admin.');return}
+    if(!r.token){toast(r.status===0?'Cannot reach the server. Try again.':'Wrong username or password.');return}
+    setSession(r.token);applyState(r);ui.tab='status';ui.au='users';ui.vuser=null;ui.sv=null;
+    if(me.role==='user')rollover(me);
+    commit();
+  },
+  register:async()=>{
+    const n=document.getElementById('ru').value.trim(),p=document.getElementById('rp').value,p2=document.getElementById('rp2').value;
+    if(!validName(n)){toast('Username must be 3 to 20 letters, numbers, . _ or -.');return}
+    if(p.length<4){toast('Password needs at least 4 characters.');return}
+    if(p!==p2){toast('Passwords do not match.');return}
+    const salt=uid(),r=await api('register',{username:n,salt,ph:await hash(p,salt)});
+    if(r.status===409){toast('That username is taken.');return}
+    if(!r.token){toast('Cannot reach the server. Try again.');return}
+    setSession(r.token);applyState(r);ui.sv=null;
+    toast('[System] Account created. Complete the survey to begin.');commit();
+  },
+  logout:()=>{me=null;setSession(null);ui.up=null;ui.vuser=null;ui.form=null;ui.sv=null;render()},
+  tab:id=>{if(me.role==='admin'){ui.au=id;ui.vuser=null;ui.form=null}else ui.tab=id;render();window.scrollTo(0,0)},
+  theme:id=>{DB.theme=id;try{localStorage.setItem('the-system-theme',id)}catch(e){}render()},
+  changePw:async()=>{
+    const o=document.getElementById('cpO').value,n=document.getElementById('cpN').value;
+    if(n.length<4){toast('New password needs at least 4 characters.');return}
+    const sl=await api('salt',{username:me.username});
+    const salt=uid(),r=await api('changePw',{oldPh:await hash(o,sl.salt||''),salt,ph:await hash(n,salt)});
+    if(!r.ok){toast('Current password is wrong.');return}
+    me.defaultPw=false;snap[me.id]=JSON.stringify(me);toast('[System] Password changed.');render();
+  },
+  closeUp:()=>{ui.up=null;render()},
+
+  /* survey */
+  submitSurvey:()=>{
+    const ans={};let missing=null;
+    SURVEY.forEach(sec=>sec.qs.forEach(q=>{
+      if(q.type==='multi')ans[q.id]=[...document.querySelectorAll('input[name="'+q.id+'"]:checked')].map(i=>i.value);
+      else if(q.type==='text')ans[q.id]=document.getElementById(q.id).value.trim().slice(0,60);
+      else{const c=document.querySelector('input[name="'+q.id+'"]:checked');if(c)ans[q.id]=c.value;else if(!missing)missing=q.id}
+    }));
+    if(missing){toast('Answer every required question.');const el=document.getElementById('f-'+missing);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});return}
+    me.survey={ans,time:+ans.time,intensity:ans.intensity,skill:ans.intf,goal:ans.goal,
+      prefs:{STR:ans.strp,INT:ans.intp,WIS:ans.wisp},at:Date.now()};
+    me.analysis=analyze(me);
+    initGame(me);
+    ui.sv='analysis';ui.tab='status';
+    toast('[System] Your road has been built.');
+    commit();
+  },
+  enter:()=>{ui.sv=null;ui.tab='status';render();window.scrollTo(0,0)},
+
+  /* hunter gameplay */
+  tq:id=>{
+    const g=me.g,q=findQ(g,id);if(!q)return;
+    if(q.doneOn===today()){
+      gain(g,q.s,-(q.award||0));q.doneOn=null;q.award=0;g.totalDone=Math.max(0,g.totalDone-1);
+    }else{
+      const amt=award(g,q.s,q.x);q.award=amt;q.doneOn=today();g.totalDone+=1;
+      gain(g,q.s,amt);toast('[Quest complete] '+q.s+' +'+amt+' XP');
+      if(allDone(g)){toast('[Quest alert] All daily quests cleared.');glog(g,'All daily quests cleared.')}
+    }
+    commit();
+  },
+  adv:id=>{
+    const g=me.g,d=findD(g,id);if(!d||d.p>=d.n)return;
+    d.p+=1;
+    if(d.p>=d.n){
+      const amt=award(g,d.s,d.x);gain(g,d.s,amt);g.cleared+=1;
+      toast('[Dungeon cleared] '+d.s+' +'+amt+' XP');glog(g,'Dungeon cleared: '+d.t+'.');
+    }
+    commit();
+  },
+  back:id=>{const d=findD(me.g,id);if(d&&d.p>0&&d.p<d.n){d.p-=1;commit()}},
+  pen:()=>{const g=me.g;if(g.penalty&&!g.penalty.done){g.penalty.done=true;g.penClr+=1;glog(g,'Penalty quest cleared.');toast('[Penalty cleared] You are back on track.');commit()}},
+  rest:()=>{const g=me.g;g.restDay=today();g.restWeek=weekKey();glog(g,'Rest day used.');toast('[Rest day] Your streak is safe today.');commit()},
+  eqt:id=>{me.g.title=id;saveDB();render()},
+
+  /* admin */
+  backUsers:()=>{ui.vuser=null;ui.form=null;render()},
+  viewUser:id=>{ui.vuser=id;ui.vtab='overview';ui.form=null;render();window.scrollTo(0,0)},
+  vtab:id=>{ui.vtab=id;ui.form=null;render()},
+  closeForm:()=>{ui.form=null;ui.conf=null;render()},
+  editForm:id=>{
+    const p=id.split(':'),kind=p[0],key=p[1];
+    ui.form={kind,id:key==='new'?null:key};render();
+    const el=document.getElementById(kind==='u'?'fuN':'fT');if(el){el.scrollIntoView({block:'center'});el.focus()}
+  },
+  saveUser:async()=>{
+    const f=ui.form,u=f.id?userById(f.id):null;
+    const n=document.getElementById('fuN').value.trim(),p=document.getElementById('fuP').value,role=document.getElementById('fuR').value;
+    const dis=u?document.getElementById('fuD').checked:false;
+    if(!validName(n)){toast('Username must be 3 to 20 letters, numbers, . _ or -.');return}
+    if(nameTaken(n,u?u.id:null)){toast('That username is taken.');return}
+    if(!u&&p.length<4){toast('Password needs at least 4 characters.');return}
+    if(p&&p.length<4){toast('Password needs at least 4 characters.');return}
+    if(u){
+      if(u.id===me.id&&(dis||role!=='admin')){toast('You cannot disable or demote your own account.');return}
+      if(u.role==='admin'&&(role!=='admin'||dis)&&lastAdmins(u.id)<1){toast('Keep at least one active admin.');return}
+      u.username=n;u.role=role;u.disabled=dis;
+      if(p){u.salt=uid();u.ph=await hash(p,u.salt);u.defaultPw=false}
+      if(role==='admin'){u.survey=null;u.g=null;u.analysis=null}
+      toast('[System] Account updated.');
+    }else{
+      const nu=await makeUser(n,p,role);DB.users.push(nu);toast('[System] Account created.');
+    }
+    ui.form=null;commit();
+  },
+  delUser:id=>{
+    const key='delUser:'+id;
+    if(ui.conf!==key){ui.conf=key;render();return}
+    const u=userById(id);if(!u||u.id===me.id){ui.conf=null;render();return}
+    if(u.role==='admin'&&lastAdmins(u.id)<1){toast('Keep at least one active admin.');ui.conf=null;render();return}
+    DB.users=DB.users.filter(x=>x.id!==id);ui.conf=null;toast('[System] Account deleted.');commit();
+  },
+  resetUser:id=>{
+    const key='resetUser:'+id;
+    if(ui.conf!==key){ui.conf=key;render();return}
+    const u=userById(id);if(u){u.survey=null;u.g=null;u.analysis=null}
+    ui.conf=null;ui.form=null;toast('[System] Survey and progress reset. They will retake the survey on next login.');commit();
+  },
+  saveItem:()=>{
+    const u=userById(ui.vuser);if(!u||!u.g)return;
+    const f=ui.form,g=u.g,isQ=f.kind==='q';
+    const t=document.getElementById('fT').value.trim();
+    if(!t){toast('Enter a name first.');return}
+    const s=document.getElementById('fS').value;
+    const x=Math.max(5,Math.min(1000,parseInt(document.getElementById('fX').value,10)||15));
+    if(isQ){
+      const keep=document.getElementById('fK').checked;
+      const q=f.id?findQ(g,f.id):null;
+      if(q){q.t=t;q.s=s;q.x=x;q.keep=keep}
+      else g.quests.push({id:uid(),t,s,x,gen:false,keep});
+    }else{
+      const n=Math.max(1,Math.min(500,parseInt(document.getElementById('fN').value,10)||10));
+      const d=f.id?findD(g,f.id):null;
+      if(d){d.t=t;d.s=s;d.x=x;d.n=n;if(d.p>n)d.p=n}
+      else g.dungeons.push({id:uid(),t,s,x,n,p:0,gen:false});
+    }
+    glog(g,'An admin updated your '+(isQ?'quests':'dungeons')+'.');
+    ui.form=null;commit();
+  },
+  delItem:id=>{
+    const u=userById(ui.vuser);if(!u||!u.g)return;
+    const p=id.split(':'),g=u.g;
+    if(p[0]==='q')g.quests=g.quests.filter(q=>q.id!==p[1]);
+    else g.dungeons=g.dungeons.filter(d=>d.id!==p[1]);
+    glog(g,'An admin updated your '+(p[0]==='q'?'quests':'dungeons')+'.');
+    commit();
+  },
+  'export':async()=>{
+    const r=await api('export',{});
+    if(!r.users){toast('Export failed.');return}
+    ui.dat=JSON.stringify({v:2,users:r.users});render();const el=document.getElementById('dat');if(el){el.focus();el.select()}
+  },
+  'import':async()=>{
+    const el=document.getElementById('dat');let o;
+    try{o=JSON.parse(el.value)}catch(e){toast('That backup text is not valid.');return}
+    const r=await api('import',{users:o&&o.users});
+    if(!r.ok){toast('That backup text is not valid.');return}
+    const st=await api('state',{});
+    ui.dat='';ui.vuser=null;
+    if(!st.users){me=null;setSession(null);toast('[System] Imported. Please log in again.');render();return}
+    applyState(st);toast('[System] Backup imported.');render();
+  }
+};
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  const a=b.getAttribute('data-a'),id=b.getAttribute('data-id');
+  if(ui.conf&&ui.conf!==a+':'+id)ui.conf=null;
+  if(!A[a])return;
+  let r;
+  try{r=A[a](id,b)}catch(err){toast('Something went wrong.');return}
+  if(r&&r.catch)r.catch(()=>toast('Something went wrong.'));
+});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  const t=e.target;
+  if(t&&t.getAttribute&&t.getAttribute('data-enter')){const b=document.getElementById(t.getAttribute('data-enter'));if(b)b.click()}
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)return;
+  if(me&&me.role==='user'&&me.g&&rollover(me))commit();
+  refresh();
+});
+setInterval(()=>{if(me&&me.role==='user'&&me.g&&rollover(me))commit();refresh()},60000);
+
+/* ============ Init ============ */
+(async function init(){
+  DB={v:2,theme:savedTheme(),users:[]};
+  if(getSession()){
+    const r=await api('state',{});
+    if(r.users)applyState(r);else if(r.status===401)setSession(null);
+  }
+  if(me&&me.role==='user'&&me.g)rollover(me);
+  render();
+})();
+})();
+</script>
+</body>
+</html>

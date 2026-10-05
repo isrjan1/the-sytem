@@ -1,0 +1,6 @@
+{
+  "name": "the-system",
+  "private": true,
+  "version": "3.0.0",
+  "dependencies": { "@netlify/blobs": "^8.1.0" }
+}
