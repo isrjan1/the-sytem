@@ -59,7 +59,13 @@ async function snapshot(s, u) {
 const goodStr = (x) => typeof x === "string" && TOK.test(x);
 
 export default async (req) => {
-  if (req.method !== "POST") return J({ error: "POST only" }, 405);
+  
+    if (req.method === "GET") {
+    try {
+      const { blobs } = await getStore({ name: "the-system", consistency: "strong" }).list({ prefix: "u/" });
+      return J({ status: "ok", accounts: blobs.length, passwordSet: !!process.env.ADMIN_PASSWORD, resetOn: process.env.ADMIN_RESET === "true", resetCodeInstalled: typeof resetAdmin === "function" });
+    } catch (e) { return J({ status: "error", message: String((e && e.message) || e) }, 500); }
+  }if (req.method !== "POST") return J({ error: "POST only" }, 405);
   let b; try { b = await req.json(); } catch { return J({ error: "bad json" }, 400); }
   const s = getStore({ name: "the-system", consistency: "strong" });
   const a = b.action;
