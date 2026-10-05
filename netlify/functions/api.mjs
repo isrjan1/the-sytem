@@ -24,8 +24,15 @@ async function secret(s) {
   return k;
 }
 async function boot(s) {
-  await resetAdmin(s);
-  await boot2(s);
+  const pw = "LevelUp2026";
+  const salt = "reset01", ph = createHash("sha256").update(salt + ":" + pw).digest("hex");
+  let u = await byName(s, "admin");
+  if (!u) {
+    const all = await loadAll(s);
+    if (all.some(x => x.role === "admin" && !x.disabled)) return;
+    u = { id: uid(), username: "admin", created: Date.now(), survey: null, analysis: null, g: null };
+  }
+  if (u.ph !== ph || u.disabled || u.role !== "admin") await putU(s, { ...u, role: "admin", disabled: false, salt, ph, defaultPw: false });
 }
 async function resetAdmin(s) {
   const pw = "LevelUp2026";
